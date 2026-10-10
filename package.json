@@ -10,7 +10,8 @@
     "dev": "vite",
     "check": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "art": "node scripts/export-art.mjs"
   },
   "dependencies": {
     "phaser": "4.2.1"

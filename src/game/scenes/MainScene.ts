@@ -16,7 +16,8 @@ import {
   type Pt,
 } from '../layout';
 import { DebugOverlay } from '../ui/DebugOverlay';
-import { drawBackground, Hud } from '../ui/Hud';
+import { loadUiAssets } from '../ui/assets';
+import { addBackground, Hud } from '../ui/Hud';
 
 type ScenePhase = 'title' | 'fight' | 'result';
 
@@ -44,7 +45,6 @@ export class MainScene extends Phaser.Scene {
   private hitstopUntil = 0;
   private pendingShake: { duration: number; intensity: number } | null = null;
   private resultAt = 0;
-  private restartHintShown = false;
   private dodgeAnim: DodgeAnim | null = null;
   private nextBeep = new Map<number, number>();
 
@@ -52,15 +52,18 @@ export class MainScene extends Phaser.Scene {
     super('MainScene');
   }
 
+  preload(): void {
+    loadUiAssets(this);
+  }
+
   create(): void {
     this.phase = 'title';
     this.combat = null;
     this.world = this.add.container(0, 0);
-    drawBackground(this, this.world);
+    addBackground(this, this.world);
     this.fx = new Effects(this, this.world);
     this.hud = new Hud(this);
     this.debug = new DebugOverlay(this, import.meta.env.DEV);
-    this.hud.showTitle();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.press(pointer.x < this.scale.width / 2 ? 'dodge' : 'slash');
@@ -109,11 +112,6 @@ export class MainScene extends Phaser.Scene {
     this.fx.draw(this.t, dt, combat?.phase === 'fight' ? combat.moves : []);
     this.hud.update(this.t, combat);
     this.debug.update(combat, now);
-
-    if (this.phase === 'result' && !this.restartHintShown && now >= this.resultAt + RESTART_DELAY) {
-      this.restartHintShown = true;
-      this.hud.showRestartHint();
-    }
   }
 
   private press(action: 'dodge' | 'slash'): void {
@@ -142,14 +140,13 @@ export class MainScene extends Phaser.Scene {
 
   private startFight(): void {
     this.fx.clear();
-    this.hud.clearScreens();
+    this.hud.reset();
     this.debug.reset();
     this.t = 0;
     this.hitstopUntil = 0;
     this.pendingShake = null;
     this.dodgeAnim = null;
     this.nextBeep.clear();
-    this.restartHintShown = false;
     this.lastReal = performance.now();
     this.combat = new Combat((e) => this.onCombatEvent(e));
     this.phase = 'fight';
@@ -215,8 +212,6 @@ export class MainScene extends Phaser.Scene {
       case 'end':
         this.phase = 'result';
         this.resultAt = performance.now();
-        this.restartHintShown = false;
-        this.hud.showResult(e.phase === 'win');
         break;
     }
   }

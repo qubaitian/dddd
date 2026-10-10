@@ -41,8 +41,8 @@ function createTuning() {
     },
 
     windows: {
-      perfect: { before: 80, after: 40 } as TimingWindow,
-      guard: { before: 170, after: 80 } as TimingWindow,
+      perfect: { before: 60, after: 60 } as TimingWindow,
+      guard: { before: 125, after: 125 } as TimingWindow,
     },
 
     shot: {

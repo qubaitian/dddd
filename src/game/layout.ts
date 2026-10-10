@@ -21,7 +21,6 @@ export interface Curve {
 export const TOP_BAND = 20;
 /** 底部血条所在的面罩边框顶边 */
 export const BOTTOM_BAND = 202;
-export const HORIZON_Y = 100;
 
 /** 玩家受击与拼刀交点 */
 export const PLAYER: Pt = { x: CX, y: 150 };

@@ -1,14 +1,14 @@
 import * as Phaser from 'phaser';
 import type { ActiveMove, Combat, InputLog } from '../combat/Combat';
 import { tuning } from '../data/tuning';
-import { BOTTOM_BAND, TOP_BAND, W } from '../layout';
+import { H, TOP_BAND, W } from '../layout';
 import { monoText } from './text';
 
-const X0 = 10;
-const X1 = W - 10;
-const Y = BOTTOM_BAND - 12;
-const BEFORE = 600;
-const AFTER = 250;
+const X0 = 40;
+const X1 = W - 40;
+const Y = H / 2 - 4;
+/** 时间条半宽对应的毫秒数，时间条以判定窗口的中点为中心 */
+const HALF_SPAN = 450;
 
 const OUTCOME_COLOR: Record<InputLog['outcome'], number> = {
   parry: 0x60ff80,
@@ -78,14 +78,19 @@ export class DebugOverlay {
     this.info.setText(lines.join('\n'));
 
     const focus = this.focus;
-    g.fillStyle(0x000000, 0.65);
+    g.fillStyle(0x000000, 0.45);
     g.fillRect(X0 - 2, Y - 2, X1 - X0 + 4, 12);
     if (!focus) {
       this.label.setText('');
       return;
     }
 
-    const toX = (dt: number) => Phaser.Math.Linear(X0, X1, (dt + BEFORE) / (BEFORE + AFTER));
+    const defendable = focus.spec.type !== 'blast';
+    const dodgeWindow = tuning.player.dodgeDuration;
+    const center = defendable ? (guard.after - guard.before) / 2 : -dodgeWindow / 2;
+    const from = center - HALF_SPAN;
+    const to = center + HALF_SPAN;
+    const toX = (dt: number) => Phaser.Math.Linear(X0, X1, (dt - from) / (to - from));
     const rect = (from: number, to: number, color: number, alpha: number) => {
       const a = Phaser.Math.Clamp(toX(from), X0, X1);
       const b = Phaser.Math.Clamp(toX(to), X0, X1);
@@ -93,25 +98,23 @@ export class DebugOverlay {
       g.fillRect(a, Y, Math.max(1, b - a), 8);
     };
 
-    const defendable = focus.spec.type !== 'blast';
     if (defendable) {
       rect(-guard.before, guard.after, 0xffd040, 0.55);
       rect(-perfect.before, perfect.after, 0x60ff80, 0.9);
     } else {
-      const d = tuning.player.dodgeDuration;
-      rect(-d, 0, 0x60c0ff, 0.5);
+      rect(-dodgeWindow, 0, 0x60c0ff, 0.5);
     }
     g.fillStyle(0xffffff, 1);
     g.fillRect(Math.round(toX(0)), Y - 2, 1, 12);
 
     const startDt = focus.start - focus.impact;
-    if (startDt >= -BEFORE) {
+    if (startDt >= from) {
       g.fillStyle(0xff8040, 1);
       g.fillRect(Math.round(toX(startDt)), Y, 1, 8);
     }
 
     const now = t - focus.impact;
-    if (now >= -BEFORE && now <= AFTER) {
+    if (now >= from && now <= to) {
       g.fillStyle(0x40e0ff, 1);
       g.fillRect(Math.round(toX(now)), Y - 3, 1, 14);
     }
